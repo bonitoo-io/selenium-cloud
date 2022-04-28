@@ -1,4 +1,4 @@
-# selenium-automation
+# selenium-cloud
 
 Run large scale browser infrastructure using Aerokube Grid Router with SeleniumHQ official images or Aerokube Selenoid images on Amazon EC2 or locally.
 It is designed to execute selenium based tests in different browsers with high parallelization.
