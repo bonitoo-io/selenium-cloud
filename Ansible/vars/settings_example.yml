@@ -1,0 +1,37 @@
+---
+ec2_keypair: keypair-name
+ec2_image: ami-05f7491af5eef733a  # Ubuntu 20.04 LTS
+ec2_region: eu-central-1
+ec2_az: eu-central-1c
+ec2_subnet: subnet-id
+node_tag_name: selenium-automation-node
+node_instance_type: t3.medium
+node_volume_size: 8
+node_volume_type: gp2
+node_volume_iops: 300
+node_ebs_optimized: false
+node_tenancy: default
+node_sg: sg-id
+hub_tag_name: selenium-automation-hub
+hub_instance_type: t3.micro
+hub_volume_size: 8
+hub_volume_type: gp2
+hub_volume_iops: 6000
+hub_ebs_optimized: false
+hub_tenancy: default
+hub_sg: sg-id
+router_tag_name: selenium-automation-router
+router_instance_type: t3.micro
+router_volume_size: 8
+router_volume_type: gp2
+router_volume_iops: 6000
+router_ebs_optimized: false
+router_tenancy: default
+router_sg: sg-id
+tag_type: selenium-cloud
+build_id: 0
+request_spot_instance: true
+report_tags:
+  build_id: "{{ build_id | default(0) }}"
+interpreter_python: /usr/bin/python3
+remote_user: ubuntu
