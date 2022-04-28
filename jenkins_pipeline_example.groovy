@@ -99,9 +99,9 @@ pipeline {
     post {
         always {
             discordSend(
-                    link: ${env.BUILD_URL},
-                    result: ${currentBuild.currentResult},
-                    title: ${env.JOB_NAME},
+                    link: "${env.BUILD_URL}",
+                    result: "${currentBuild.currentResult}",
+                    title: "${env.JOB_NAME}",
                     webhookURL: "https://discord.com/api/webhooks/"
             )
         }
