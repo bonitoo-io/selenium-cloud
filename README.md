@@ -12,11 +12,15 @@ It is designed to execute selenium based tests in different browsers with high p
 - Supports different python interpreters across regions.
 - Supports different AMIs for browser infrastructure.
 
+#### Limitations
+
+- Supported cloud providers: AWS
+
 #### TODO
 
 - opera
 - IE with Windows image support
-- test no_router=false on localhost
+- extend public cloud support
 
 ## Prerequisites
 
