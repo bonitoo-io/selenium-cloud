@@ -1,0 +1,14 @@
+---
+# For Python 3, use python3-pip.
+pip_package: "{{ 'python3-pip' if 'python3' in ansible_python_interpreter else 'python-pip' | default('python-pip') }}"
+pip_executable: "{{ 'pip3' if pip_package.startswith('python3') else 'pip' }}"
+
+pip_install_packages:
+  - name: docker-py
+    state: latest
+
+pip3_install_packages:
+  - name: docker
+    state: latest
+  - name: six
+    state: latest

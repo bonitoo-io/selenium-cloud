@@ -1,0 +1,17 @@
+---
+keypair: "{{ ec2_keypair }}"
+security_group: "{{ hub_sg }}"
+image: "{{ ec2_image }}" #ami-794e7192
+region: "{{ ec2_region }}"
+availability_zone: "{{ ec2_az }}"
+subnet: "{{ ec2_subnet }}"
+assign_public_ip: true
+instance_type: "{{ hub_instance_type }}" # c4.4xlarge
+tag_name: "{{ hub_tag_name }}"
+volume_size: "{{ hub_volume_size }}"
+#gp2, io1,st1,sc1 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html?icmpid=docs_ec2_console
+volume_type: "{{ hub_volume_type }}"
+#used when volume_type=io1
+volume_iops: "{{ hub_volume_iops }}"
+ebs_optimized: "{{ hub_ebs_optimized | default('false') }}"
+tenancy: "{{ hub_tenancy | default('default') }}"

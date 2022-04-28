@@ -1,0 +1,3 @@
+hub_port: 4444
+hub_max_session: 1000
+seleniumhq_docker_tag: latest

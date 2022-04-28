@@ -1,0 +1,30 @@
+{
+	"hosts": {
+	"{{ grid_router_host_list }}": {
+	{% for region in grid_router_regions -%}
+	"{{ region.name }}": {
+		{% for host in region.hosts -%}
+		"{{ host.name }}": {
+			"port": {{ host.port }},
+			"count": {{ host.browser_count }}
+		}{%- if not loop.last -%},{%- endif -%}
+		{%- endfor %}
+	}
+	{%- endfor %}
+	}
+  },
+  "quota": {
+    "selenium": {
+      {% for browser in grid_router_browsers -%}
+         "{{ browser.name }}": {
+            "defaultVersion": "{{ browser.defaultVersion }}",
+            "versions": {
+            {% for version in browser.versions -%}
+                "{{ version }}": "{{ grid_router_host_list }}"{%- if not loop.last -%},{%- endif -%}
+            {%- endfor %}
+            }
+         }{%- if not loop.last -%},{%- endif -%}
+        {%- endfor %}
+    }
+  }
+}

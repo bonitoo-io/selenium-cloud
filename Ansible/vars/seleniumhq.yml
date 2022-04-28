@@ -1,0 +1,31 @@
+---
+node_group_name: node_group
+hub_group_name: hub_group
+router_group_name: router_group
+chrome_containers: 2
+firefox_containers: 2
+chrome_max_instances: 2
+firefox_max_instances: 2
+chrome_max_session: 2
+firefox_max_session: 2
+no_router: false
+single_hub_node: false
+hub_port: 4444
+router_count: 1 # by default 1, more than 1 router will create different routers with same hub grid - not really useful
+hub_count: 3 # changed to 1 when 'no_router' is true
+max_nodes_per_hub: 5
+# for versions and docker tag see: https://github.com/SeleniumHQ/docker-selenium/releases
+chrome_browser_version: "68.0.3440.84"
+firefox_browser_version: "61.0.1"
+seleniumhq_docker_tag: 3.14.0-arsenic
+grid_router_version: 1.6.7 # https://hub.docker.com/r/aerokube/ggr/tags
+grid_router_ui_version: 1.1.2 # https://hub.docker.com/r/aerokube/ggr-ui/tags
+grid_router_browsers:
+  - name: firefox
+    defaultVersion: "{{ firefox_browser_version }}"
+    versions:
+      - "{{ firefox_browser_version }}"
+  - name: chrome
+    defaultVersion: "{{ chrome_browser_version }}"
+    versions:
+      - "{{ chrome_browser_version }}"

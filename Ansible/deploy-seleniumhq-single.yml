@@ -1,0 +1,112 @@
+- name: Common tasks
+  hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - vars/seleniumhq.yml
+  tags:
+    - always
+  tasks:
+    - name: Prepare credentials
+      include_role:
+        name: common
+        tasks_from: setup_credentials
+    - name: Prepare facts
+      include_role:
+        name: common
+        tasks_from: setup_groups
+
+- name: Create Selenium instances
+  hosts: localhost
+  gather_facts: no
+  tags:
+    - ec2
+  vars_files:
+    - vars/seleniumhq.yml
+  environment: "{{ aws_vars | default(omit) }}"
+  pre_tasks:
+    - name: include vars
+      include_vars: "{{ settings_file }}"
+      when: remote_run | bool
+  tasks:
+    - name: Prepare hub-node instance(s)
+      include_role:
+        name: ec2
+        defaults_from: hub
+      vars:
+        group_name: "{{ hub_group_name }}"
+        instance_count: "{{ hub_count }}"
+      when: remote_run | bool
+
+    - name: Prepare grid router instance(s)
+      include_role:
+        name: ec2
+        defaults_from: router
+      vars:
+        group_name: "{{ router_group_name }}"
+        instance_count: "{{ router_count }}"
+      when:
+        - not no_router | bool
+        - remote_run | bool
+
+- name: Common tasks
+  hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - vars/seleniumhq.yml
+  tags:
+    - always
+  tasks:
+    - name: Prepare inventory file
+      include_role:
+        name: common
+        tasks_from: setup_inventory
+
+- name: Configure Selenium single hub-nodes(s)
+  gather_facts: true
+  become: true
+  tags:
+    - config
+  vars_files:
+    - vars/inventory.yml
+    - vars/seleniumhq.yml
+  hosts: "{{ hub_group_name }}"
+  tasks:
+    - name: Install Docker on instance(s)
+      include_role:
+        name: docker
+    - name: Install Pip on instance(s)
+      include_role:
+        name: pip
+    - name: Run Selenium containers on instance(s)
+      include_role:
+        name: selenium-single-hub-node
+
+- name: Configure Selenium grid router(s)
+  gather_facts: true
+  become: true
+  tags:
+    - config
+  vars_files:
+    - vars/seleniumhq.yml
+    - vars/inventory.yml
+  hosts: "{{ router_group_name }}"
+  tasks:
+    - name: Install Docker on instance(s)
+      include_role:
+        name: docker
+      when: not no_router | bool
+    - name: Install Pip on instance(s)
+      include_role:
+        name: pip
+      when: not no_router | bool
+    - name: Run containers on instance(s)
+      include_role:
+        name: gridrouter
+      when: not no_router | bool
+      vars:
+        grid_router_host_list: "{{ groups[router_group_name] }}"
+
+
+
+
+

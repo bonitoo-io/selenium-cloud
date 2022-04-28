@@ -1,0 +1,9 @@
+---
+- name: get latest docker images
+  docker_image:
+    name: "{{ item }}:{{ seleniumhq_docker_tag }}"
+    state: present
+    pull: yes
+  with_items:
+    - selenium/node-chrome
+    - selenium/node-firefox

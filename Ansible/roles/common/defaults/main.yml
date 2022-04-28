@@ -1,0 +1,8 @@
+---
+max_nodes_per_hub: 5
+nodes_count_modulo: 0
+hub_count: 0
+node_count: 0
+node_group_list: []
+grid_router_browsers: []
+single_hub_node: false

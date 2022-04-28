@@ -1,0 +1,82 @@
+---
+#- name: Selenoid | Check selenoid container exist
+#  shell: 'docker ps -aq --filter "name={{ item }}"'
+#  with_items:
+#    - 'cm'
+#    - 'selenoid-ui'
+#    - 'selenoid'
+#  register: found_containers
+#
+#- name: Selenoid | Remove selenoid container if exist
+#  shell: 'docker stop {{ item.item }} && docker rm -fv {{ item.item }}'
+#  with_items: '{{ found_containers.results }}'
+#  when: item.stdout
+
+- name: Selenoid | Remove container
+  docker_container:
+    name: "{{ item }}"
+    state: absent
+    keep_volumes: false
+    force_kill: true
+  with_items:
+    - cm
+    - selenoid
+    - selenoid-ui
+
+- name: Selenoid | Create video folder
+  file:
+    path: "{{ selenoid_video_host_output_dir }}"
+    state: directory
+    mode: 0755
+
+- name: Selenoid | Run CM container, download browser images and run selenoid
+  docker_container:
+    name: cm
+    state: started
+    restart_policy: "no"
+    image: "aerokube/cm:{{ selenoid_cm_version }}"
+    volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+    - "/root:/root"
+    - "{{ selenoid_video_host_output_dir }}:{{ selenoid_video_container_output_dir }}"
+    env:
+      TZ: "{{ selenoid_time_zone }}"
+      OVERRIDE_HOME: "/root"
+    command: >
+      selenoid start
+        --config-dir {{ selenoid_config_dir }}
+        --version {{ selenoid_version }}
+        --tmpfs {{ selenoid_tmpfs }}
+        --browsers {% for browser in grid_router_browsers -%}{{ browser.name }}:{{ browser.defaultVersion }}{%- if not loop.last -%};{%- endif -%}{%- endfor %}
+        --force
+        --vnc
+        --args "-limit {{ selenoid_limit }} -listen :{{ selenoid_listen_port }} -video-output-dir={{ selenoid_video_container_output_dir }} -conf /etc/selenoid/browsers.json -timeout {{ selenoid_timeout }}"
+
+- name: Wait for selenoid
+  wait_for:
+    port: "{{ selenoid_listen_port }}"
+
+- name: Selenoid | Run Selenoid UI
+  docker_container:
+    name: selenoid-ui
+    state: started
+    restart_policy: "on-failure"
+    image: "aerokube/selenoid-ui:{{ selenoid_ui_version }}"
+    network_mode: "{{ docker_network_name }}"
+    networks:
+    - name: "{{ docker_network_name }}"
+      links:
+      - selenoid
+    ports:
+    - "8080:8080"
+    entrypoint: ["/selenoid-ui", "--selenoid-uri=http://selenoid:{{ selenoid_listen_port }}"]
+
+- local_action:
+    module: lineinfile
+    dest: "{{ hostvars['localhost'].workspace }}/selenium_hub_host.txt"
+    regexp: "{{ inventory_hostname }}:{{ selenoid_listen_port }}"
+    line: "{{ inventory_hostname }}:{{ selenoid_listen_port }}"
+    state: present
+    create: true
+  become: false
+  when: no_router | bool

@@ -1,0 +1,7 @@
+---
+- name: Launch new ec2 instance
+  include_tasks: launch_instance.yml
+
+- name: Prepare inventory and add hosts to node groups
+  include_tasks: prepare_inventory.yml
+

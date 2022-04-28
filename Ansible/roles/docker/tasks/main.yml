@@ -1,0 +1,52 @@
+---
+- name: Check docker is installed.
+  command: docker info
+  ignore_errors: true
+  register: output
+
+- name: Set fact if docker executable is not available.
+  set_fact:
+    docker_exists: false
+  when: output.failed
+
+- include_tasks: setup-RedHat.yml
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution != 'Amazon'
+    - not docker_exists
+
+- include_tasks: setup-Amazon.yml
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution == 'Amazon'
+    - ansible_distribution_major_version != "2018"
+    - not docker_exists
+
+- include_tasks: setup-Debian.yml
+  when:
+    - ansible_os_family == 'Debian'
+    - not docker_exists
+
+- name: Ensure Docker is started and enabled at boot.
+  service:
+    name: docker
+    state: "{{ docker_service_state }}"
+    enabled: "{{ docker_service_enabled }}"
+  when: not docker_exists
+
+- name: Ensure handlers are notified now to avoid firewall conflicts.
+  meta: flush_handlers
+
+- include_tasks: docker-compose.yml
+  when: docker_install_compose | bool
+
+- include_tasks: docker-users.yml
+  when:
+   - docker_users | length > 0
+
+#- name: configure custom registry
+#  lineinfile:
+#    dest: "/etc/sysconfig/docker"
+#    regexp: '^ADD_REGISTRY'
+#    line: "ADD_REGISTRY='--add-registry {{ docker_registry | default('0.0.0.0/0') }}'"
+#  when: ansible_distribution == 'Amazon'

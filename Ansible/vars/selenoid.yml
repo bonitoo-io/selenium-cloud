@@ -1,0 +1,29 @@
+---
+node_group_name: node_group
+hub_group_name: hub_group
+router_group_name: router_group
+no_router: true
+single_hub_node: true # do not change it, selenoid node is not multi-host
+hub_count: 3 # changed to 1 when 'no_router' is true
+router_count: 1 # by default 1, more than 1 router will create different routers with same hub grid - not really useful
+max_nodes_per_hub: 5
+docker_network_name: selenoid
+selenoid_version: 1.10.1 # https://hub.docker.com/r/aerokube/selenoid/tags
+selenoid_cm_version: 1.7.2 # https://hub.docker.com/r/aerokube/cm/tags
+selenoid_ui_version: 1.10.3 # https://hub.docker.com/r/aerokube/selenoid-ui/tags/
+grid_router_version: 1.6.8 # https://hub.docker.com/r/aerokube/ggr/tags
+grid_router_ui_version: 1.1.2 # https://hub.docker.com/r/aerokube/ggr-ui/tags
+selenoid_limit: 10 # Total number of simultaneously running containers http://aerokube.com/selenoid/latest/#_recommended_docker_settings
+hub_port: 4444 # Listen port
+selenoid_browsers_last_versions: 1 # How many last version browsers need download in selenoid
+chrome_browser_version: "88.0"
+firefox_browser_version: "87.0"
+grid_router_browsers:
+  - name: firefox
+    defaultVersion: "{{ firefox_browser_version }}"
+    versions:
+      - "{{ firefox_browser_version }}"
+  - name: chrome
+    defaultVersion: "{{ chrome_browser_version }}"
+    versions:
+      - "{{ chrome_browser_version }}"

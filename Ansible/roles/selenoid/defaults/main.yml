@@ -1,0 +1,13 @@
+---
+selenoid_version: 1.10.0 # https://hub.docker.com/r/aerokube/selenoid/tags
+selenoid_cm_version: 1.7.1 # https://hub.docker.com/r/aerokube/cm/tags
+selenoid_ui_version: 1.10.0 # https://hub.docker.com/r/aerokube/selenoid-ui/tags/
+selenoid_limit: 5 # Total number of simultaneously running containers http://aerokube.com/selenoid/latest/#_recommended_docker_settings
+selenoid_tmpfs: 128 # Add in-memory filesystem (tmpfs) to container http://aerokube.com/selenoid/latest/#_other_optional_fields
+selenoid_config_dir: /root/.aerokube/selenoid # Selenoid configuration dir
+selenoid_listen_port: "{{ hub_port }}" # Listen port
+selenoid_time_zone: Europe/Prague # Timezone in container
+selenoid_browsers_last_versions: 2 # How many last version browsers need download in selenoid
+selenoid_video_host_output_dir: /var/lib/selenoid/video # Dir for save video in host path
+selenoid_video_container_output_dir: /opt/selenoid/video # Dir for save video in container (default: /opt/selenoid/video)
+selenoid_timeout: 5m0s

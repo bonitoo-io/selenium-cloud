@@ -1,0 +1,27 @@
+#jinja2: lstrip_blocks: True
+---
+grid_router_groups:
+{% for group in node_group_list %}
+-   name: {{ group }}
+    hub_host: {{ groups[hub_group_name][ loop.index - 1 ] }}
+    node_host_list:
+    {% if not single_hub_node %}
+        {% for item in node_batches[ loop.index - 1 ] %}
+    -   {{ item }}
+        {% endfor %}
+    {% else %}
+    -   {{ groups[hub_group_name][ loop.index - 1 ] }}
+    {% endif %}
+{% endfor %}
+
+grid_router_regions:
+-   name: {{ aws_region | default('localhost') }}
+    hosts:
+{% for group in node_group_list %}
+    -   name: {{ groups[hub_group_name][ loop.index - 1 ] }}
+        port: {{ hub_port | int }}
+        browser_count: {{ browser_count_per_hub | int }}
+{% endfor %}
+
+grid_router_browsers:
+{{ grid_router_browsers | to_nice_yaml }}

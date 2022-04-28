@@ -1,0 +1,5 @@
+---
+- name: Terminate instances
+  ec2:
+    state: 'absent'
+    instance_ids: "{{ groups.all|map('extract', hostvars, 'ec2_all_facts.instance_id')|list }}"

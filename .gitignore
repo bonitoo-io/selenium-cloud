@@ -1,0 +1,7 @@
+.idea
+*.iml
+target
+*.retry
+Ansible/selenium_hub_host.txt
+Ansible/ec2_instances.txt
+Ansible/vars/inventory.yml

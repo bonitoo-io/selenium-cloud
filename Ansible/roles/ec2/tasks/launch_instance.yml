@@ -1,0 +1,47 @@
+---
+# gp2: General Purpose (SSD) volumes can burst to 3000 IOPS, and deliver a consistent baseline of 3 IOPS/GiB.
+# io1: Provisioned IOPs (SSD) volumes can deliver up to 32000 IOPS, and are best for EBS-optimized instances.
+# io1: baseline performance is 3 IOPS per GiB, with a minimum of 100 IOPS and a maximum of 10000 IOPS.
+# gp2: General Purpose (SSD) volumes under 1000 GiB can burst up to 3000 IOPS
+
+- set_fact:
+    instance_volumes: [{device_name: /dev/xvda, volume_size: "{{ volume_size }}", volume_type: "{{ volume_type }}", iops: "{{ volume_iops }}", delete_on_termination: true }]
+  when: volume_type == 'io1'
+
+- set_fact:
+    instance_volumes: [{device_name: /dev/xvda, volume_size: "{{ volume_size }}", volume_type: "{{ volume_type }}",  delete_on_termination: true}]
+  when: volume_type != 'io1'
+
+- name: get current instance spot price
+  script: "get_spot_price.py --instance-type {{ instance_type }} --a-zone {{ availability_zone }}"
+  when: request_spot_instance | bool
+  register: current_spot_price
+
+- set_fact:
+    maximum_price: "{{ current_spot_price.stdout | float * 1.5 }}"
+  when: request_spot_instance | bool
+
+- ec2:
+    key_name: "{{ keypair }}"
+    group_id: "{{ security_group }}"
+    instance_type: "{{ instance_type }}"
+    image: "{{ image }}"
+    wait: true
+    wait_timeout: 720
+    region: "{{ region }}"
+    vpc_subnet_id: "{{ subnet }}"
+    assign_public_ip: "{{ assign_public_ip }}"
+    user_data: "{{ lookup('file', 'files/user_data_amazon.sh') }}"
+    instance_tags:
+      Name: "{{ tag_name }}"
+      Type: "{{ tag_type }}"
+    volumes: "{{ instance_volumes }}"
+    ebs_optimized: "{{ ebs_optimized }}"
+    spot_price: "{{ maximum_price | default(omit) }}"
+    spot_type: one-time
+    spot_wait_timeout: 86400
+    tenancy: "{{ tenancy }}"
+    count: "{{ instance_count }}"
+    instance_initiated_shutdown_behavior: terminate
+    spot_launch_group: "{{ (group_name + '_' + build_id | string ) if request_spot_instance else omit }}"
+  register: ec2

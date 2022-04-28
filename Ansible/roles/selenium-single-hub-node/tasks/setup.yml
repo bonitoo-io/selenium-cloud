@@ -1,0 +1,52 @@
+---
+- name: count the docker containers present
+  shell: docker ps -aq|wc -l
+  register: countainers
+  changed_when: no
+
+- name: ensure no docker containers present
+  shell: docker stop $(docker ps -a -q); docker rm -f $(docker ps -a -q)
+  when: countainers.stdout != '0'
+
+- name: start selenium hub
+  docker_container:
+    name: selenium-hub
+    image: "selenium/hub:latest"
+    state: started
+    ports: "{{ hub_port }}:4444"
+    env:
+      #GRID_DEBUG: true
+      GRID_MAX_SESSION: "{{ hub_max_session }}"
+
+- name: verify hub is up
+  wait_for:
+    delay: 5
+    host: "{{ inventory_hostname }}"
+    port: "{{ hub_port }}"
+  tags:
+    - test
+
+- name: start selenium-node/chrome
+  docker_container:
+    name: "{{ ansible_hostname }}-chrome-{{ item }}"
+    image: selenium/node-chrome
+    state: started
+    links: selenium-hub:hub
+    volumes:
+      - /dev/shm:/dev/shm
+    env:
+      NODE_MAX_INSTANCES: "{{ chrome_max_instances }}"
+      NODE_MAX_SESSION: "{{ chrome_max_session }}"
+  with_sequence: count="{{ chrome_containers }}"
+
+- name: start selenium-node/firefox
+  docker_container:
+    name: "{{ ansible_hostname }}-firefox-{{ item }}"
+    image: selenium/node-firefox
+    links: selenium-hub:hub
+    volumes:
+      - /dev/shm:/dev/shm
+    env:
+      NODE_MAX_INSTANCES: "{{ firefox_max_instances }}"
+      NODE_MAX_SESSION: "{{ firefox_max_session }}"
+  with_sequence: count="{{ firefox_containers }}"

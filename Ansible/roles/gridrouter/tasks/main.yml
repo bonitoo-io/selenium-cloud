@@ -1,0 +1,93 @@
+---
+#- name: Selenoid | Check selenoid container exist
+#  shell: 'docker ps -aq --filter "name={{ item }}"'
+#  with_items:
+#    - 'ggr'
+#    - 'ggr-ui'
+#    - 'selenoid-ui'
+#  register: found_containers
+#
+#- name: Selenoid | Remove selenoid container if exist
+#  shell: 'docker stop {{ item.item }} && docker rm -fv {{ item.item }}'
+#  with_items: '{{ found_containers.results }}'
+#  when: item.stdout
+
+- name: Selenoid | Remove container
+  docker_container:
+    name: "{{ item }}"
+    state: absent
+    keep_volumes: false
+    force_kill: true
+  with_items:
+    - grr
+    - grr-ui
+    - selenoid-ui
+
+- name: Grid Router | Download sctl
+  get_url:
+    url: "https://github.com/seleniumkit/sctl/releases/download/{{ grid_router_sctl_version }}/sctl_linux_amd64"
+    dest: /usr/local/bin/sctl
+    mode: 0755
+    force: yes
+  changed_when: False
+
+- name: Grid Router | Create config dir
+  file:
+    path: "{{ grid_router_qouta_path }}"
+    state: directory
+    mode: 0755
+
+- name: Grid Router | Copy quota json template
+  template:
+    src: quota_template.json.j2
+    dest: "{{ grid_router_qouta_path }}/quota_template.json"
+    mode: 0644
+
+- name: Grid Router | Generate quota file
+  shell: /usr/local/bin/sctl generate --inputFile "{{ grid_router_qouta_path }}/quota_template.json" --outputDirectory "{{ grid_router_qouta_path }}"
+
+- name: Grid Router | Run Grid Router container
+  docker_container:
+    name: ggr
+    restart_policy: always
+    image: "aerokube/ggr:{{ grid_router_version }}"
+    state: started
+    volumes:
+    - "{{ grid_router_path }}:{{ grid_router_path }}:ro"
+    env:
+      TZ: "{{ grid_router_time_zone }}"
+    ports:
+    - "{{ grid_router_port }}:4444"
+    entrypoint: ["/usr/bin/ggr", "-listen", ":4444", "-quotaDir", "{{ grid_router_qouta_path }}", "-guests-allowed", "-guests-quota", "{{ grid_router_qouta_user }}", "-timeout", "{{ grid_router_timeout }}"]
+
+- name: Grid Router | Run Grid Router UI
+  docker_container:
+    name: ggr-ui
+    restart_policy: always
+    image: "aerokube/ggr-ui:{{ grid_router_ui_version }}"
+    state: started
+    volumes:
+    - "{{ grid_router_qouta_path }}:/etc/grid-router/quota:ro"
+    ports:
+    - "8888:8888"
+
+- name: Selenoid | Run Selenoid UI
+  docker_container:
+    name: selenoid-ui
+    restart_policy: always
+    image: "aerokube/selenoid-ui:{{ selenoid_ui_version }}"
+    state: started
+    ports:
+    - "8080:8080"
+    links:
+    - ggr-ui
+    entrypoint: ["/selenoid-ui", "--selenoid-uri=http://ggr-ui:8888"]
+
+- local_action:
+    module: lineinfile
+    dest: "{{ hostvars['localhost'].workspace }}/selenium_hub_host.txt"
+    regexp: "{{ inventory_hostname }}:{{ grid_router_port }}"
+    line: "{{ inventory_hostname }}:{{ grid_router_port }}"
+    state: present
+    create: true
+  become: false

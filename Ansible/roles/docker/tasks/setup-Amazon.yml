@@ -1,0 +1,27 @@
+# Only Amazon Linux 2 is supported
+
+- name: Check docker is installed.
+  package:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+
+- name: Delete content & directory
+  file:
+    state: absent
+    path: "{{ item }}"
+  with_items:
+    - /var/lib/docker/
+    - /var/lib/containerd/
+
+- name: Install Docker.
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - docker
+  notify: restart docker

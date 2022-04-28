@@ -1,0 +1,63 @@
+---
+- name: Ensure old versions of Docker are not installed.
+  package:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+
+- name: Delete content & directory
+  file:
+    state: absent
+    path: "{{ item }}"
+  with_items:
+    - /var/lib/docker/
+    - /var/lib/containerd/
+
+- name: Ensure dependencies are installed.
+  package:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Add Docker apt key.
+  apt_key:
+    url: "{{ docker_apt_gpg_key }}"
+    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    state: present
+  register: add_repository_key
+  ignore_errors: "{{ docker_apt_ignore_key_error }}"
+
+- name: Ensure curl is present (on older systems without SNI).
+  package: name=curl state=present
+  when: add_repository_key is failed
+
+- name: Add Docker apt key (alternative for older systems without SNI).
+  shell: >
+    curl -sSL {{ docker_apt_gpg_key }} | sudo apt-key add -
+  args:
+    warn: false
+  when: add_repository_key is failed
+
+- name: Add Docker repository.
+  apt_repository:
+    repo: "{{ docker_apt_repository }}"
+    state: present
+    update_cache: true
+
+- name: Set fact
+  set_fact:
+    docker_package: "docker-{{ docker_edition }}"
+
+- name: Install Docker.
+  package:
+    name: "{{ item.name }}"
+    state: "{{ item.state | default(omit) }}"
+  with_items: "{{ docker_packages }}"
+  notify: restart docker

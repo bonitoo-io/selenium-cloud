@@ -1,0 +1,70 @@
+---
+- name: count the docker containers present
+  shell: docker ps -aq|wc -l
+  register: countainers
+  changed_when: no
+
+- name: ensure no docker containers present
+  shell: docker stop $(docker ps -a -q); docker rm -f $(docker ps -a -q)
+  when: countainers.stdout != '0'
+
+- name: count the final port number - chrome
+  set_fact:
+    node_port_chrome_stop: "{{ node_port_chrome_start | int + chrome_containers | int }}"
+  when:
+    - chrome_containers | int != 0
+
+- name: count the final port number - firefox
+  set_fact:
+    node_port_firefox_stop: "{{ node_port_firefox_start | int + firefox_containers | int }}"
+  when:
+    - firefox_containers | int != 0
+
+- name: find the corresponding grid_group and hub_host
+  set_fact:
+    group_name: "{{ item.name }}"
+    hub_host: "{{ item.hub_host }}"
+  with_items: "{{ grid_router_groups }}"
+  when: inventory_hostname in item.node_host_list
+
+- debug: var=group_name
+- debug: var=hub_host
+
+- name: start selenium-node/chrome
+  docker_container:
+    name: "{{ ansible_hostname }}-chrome-{{ item }}"
+    image: selenium/node-chrome
+    state: started
+    ports: "{{ item }}:5555"
+    volumes:
+      - /dev/shm:/dev/shm
+    env:
+      HUB_HOST: "{{ hub_host }}"
+      HUB_PORT: "{{ hub_port }}"
+      REMOTE_HOST: "http://{{ inventory_hostname }}:{{ item }}"
+      #SE_OPTS: "-host {{ ansible_default_ipv4.address }} -port {{ item }}"
+      NODE_MAX_INSTANCES: "{{ chrome_max_instances }}"
+      NODE_MAX_SESSION: "{{ chrome_max_session }}"
+      #NODE_PORT: "{{ item }}"
+  with_sequence: start={{ node_port_chrome_start | int + 1 }} end={{ node_port_chrome_stop }}
+  when:
+    - chrome_containers | int != 0
+
+- name: start selenium-node/firefox
+  docker_container:
+    name: "{{ ansible_hostname }}-firefox-{{ item }}"
+    image: selenium/node-firefox
+    ports: "{{ item }}:5555"
+    volumes:
+      - /dev/shm:/dev/shm
+    env:
+      HUB_HOST: "{{ hub_host }}"
+      HUB_PORT: "{{ hub_port }}"
+      REMOTE_HOST: "http://{{ inventory_hostname }}:{{ item }}"
+      #SE_OPTS: "-host {{ ansible_default_ipv4.address }} -port {{ item }}"
+      NODE_MAX_INSTANCES: "{{ firefox_max_instances }}"
+      NODE_MAX_SESSION: "{{ firefox_max_session }}"
+      #NODE_PORT: "{{ item }}"
+  with_sequence: start={{ node_port_firefox_start | int + 1 }} end={{ node_port_firefox_stop }}
+  when:
+    - firefox_containers | int != 0

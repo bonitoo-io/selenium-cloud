@@ -1,0 +1,92 @@
+---
+- name: set hub_count to 1 if no_router mode
+  set_fact:
+    hub_count: 1
+    single_hub_node: true
+  when: (no_router | bool) or (not remote_run | bool)
+
+- name: get a number of hubs
+  set_fact:
+    hub_count: "{{ ( node_count / max_nodes_per_hub ) | int }}"
+  when:
+    - node_count | int > max_nodes_per_hub | int
+    - not single_hub_node | bool
+
+- debug: var=hub_count
+  when: hub_count is defined
+
+#- name: get a remainder after division
+#  set_fact:
+#    nodes_count_modulo: "{{ ( node_count % max_nodes_per_hub ) | int }}"
+#  when:
+#    - node_count | int > max_nodes_per_hub | int
+
+#- name: count node groups number
+#  set_fact:
+#    node_group_count: "{{ hub_count | int + 1 }}"
+#  when:
+#    - nodes_count_modulo | int > 0
+
+- name: count node groups number
+  set_fact:
+    node_group_count: "{{ hub_count | int }}"
+  when:
+    - nodes_count_modulo | int == 0
+  failed_when:
+    - hub_count | int == 0
+
+- debug: var=node_group_count
+  when: node_group_count is defined
+
+- name: create node groups
+  set_fact:
+    node_group_list: "{{ node_group_list }} + [ '{{ item }}' ]"
+  with_sequence: start=1 end={{node_group_count}} format=grid_group_%02d
+
+- debug: var=node_group_list
+  when: node_group_list is defined
+
+- name: Set proper node count
+  set_fact:
+    node_count: "{{ hub_count | int * max_nodes_per_hub | int }}"
+  when: not single_hub_node | bool
+
+- name: Set proper node count
+  set_fact:
+    node_count: "{{ hub_count | int }}"
+  when: single_hub_node | bool
+
+- debug: var=node_count
+  when: node_count is defined
+
+- name: get chrome browser count
+  set_fact:
+    chrome_browser_count: "{{ chrome_containers | int * chrome_max_instances | int }}"
+  when:
+    - chrome_containers is defined
+    - chrome_max_instances is defined
+    - (chrome_containers | int != 0) or (chrome_max_instances | int != 0)
+
+- name: get firefox browser count
+  set_fact:
+    firefox_browser_count: "{{ firefox_containers | int * firefox_max_instances | int }}"
+  when:
+    - firefox_containers is defined
+    - firefox_max_instances is defined
+    - (firefox_containers | int != 0) or (firefox_max_instances | int != 0)
+
+- name: get browser count per hub
+  set_fact:
+    browser_count_per_hub: "{{ (( node_count | int / hub_count | int ) * ( chrome_browser_count | default(0) | int + firefox_browser_count | default(0) | int )) | int }}"
+  when:
+    - firefox_browser_count is defined or chrome_browser_count is defined
+
+- name: get browser count per hub
+  set_fact:
+    browser_count_per_hub: "{{ (( node_count | int / hub_count | int ) * ( selenoid_limit | int )) | int }}"
+  when:
+    - selenoid_limit is defined
+
+- debug: var=browser_count_per_hub
+  when: browser_count_per_hub is defined
+

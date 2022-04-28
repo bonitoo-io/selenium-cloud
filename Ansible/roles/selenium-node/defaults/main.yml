@@ -1,0 +1,11 @@
+chrome_containers: 2
+firefox_containers: 2
+chrome_max_instances: 2
+firefox_max_instances: 2
+chrome_max_session: 2
+firefox_max_session: 2
+hub_port: 4444
+hub_host: selenium-hub
+node_port_chrome_start: 5555
+node_port_firefox_start: 6666
+seleniumhq_docker_tag: latest

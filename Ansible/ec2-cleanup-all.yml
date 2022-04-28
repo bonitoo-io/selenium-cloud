@@ -1,0 +1,40 @@
+- name: Set credentials
+  hosts: localhost
+  gather_facts: yes
+  tags:
+    - always
+  tasks:
+    - name: Prepare credentials
+      include_role:
+        name: common
+        tasks_from: setup_credentials
+
+- name: Clean up ALL ec2 instances
+  hosts: localhost
+  gather_facts: yes
+  tags:
+    - ec2
+  environment: "{{ aws_vars }}"
+  pre_tasks:
+    - name: include vars
+      include_vars: "{{ settings_file }}"
+  tasks:
+    - name: Filter instances by tag
+      ec2_instance_facts:
+        filters:
+          "tag:Type": "{{ tag_type }}"
+      register: ec2
+
+    - name: Terminate instances by tag
+      ec2:
+        state: 'absent'
+        instance_ids: "{{ item.instance_id }}"
+      with_items: "{{ ec2.instances }}"
+
+    - name: Cancel spot requests
+      script: "cancel_spot_instance_requests.py --spot-ids {{ item.spot_instance_request_id }}"
+      register: response
+      with_items: "{{ ec2.instances }}"
+      when:
+        - request_spot_instance | bool
+        - item.spot_instance_request_id is defined

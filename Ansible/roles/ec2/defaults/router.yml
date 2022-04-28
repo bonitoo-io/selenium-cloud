@@ -1,0 +1,17 @@
+---
+keypair: "{{ ec2_keypair }}"
+security_group: "{{ router_sg }}"
+image: "{{ ec2_image }}" #ami-794e7192
+region: "{{ ec2_region }}"
+availability_zone: "{{ ec2_az }}"
+subnet: "{{ ec2_subnet }}"
+instance_type: "{{ router_instance_type }}" # c4.4xlarge
+assign_public_ip: true
+tag_name: "{{ router_tag_name }}"
+volume_size: "{{ router_volume_size }}"
+#gp2, io1,st1,sc1 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html?icmpid=docs_ec2_console
+volume_type: "{{ router_volume_type }}"
+#used when volume_type=io1
+volume_iops: "{{ router_volume_iops }}"
+ebs_optimized: "{{ router_ebs_optimized | default('false') }}"
+tenancy: "{{ router_tenancy | default('default') }}"

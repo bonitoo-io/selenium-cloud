@@ -1,0 +1,24 @@
+---
+- name: create node batches
+  set_fact:
+    node_batches: "{{ groups[node_group_name] | batch(max_nodes_per_hub) | list }}"
+  when: not single_hub_node | bool
+
+- debug: var=node_batches
+  when: node_batches is defined
+
+- name: Add localhost to host group
+  add_host:
+    hostname: localhost
+    groupname: "{{ hub_group_name }}"
+    ansible_connection: local
+    ansible_python_interpreter: "{{ interpreter_python | default(omit) }}"
+  when: not remote_run | bool
+
+- debug: var=groups
+
+- name: create grid_router inventory yaml
+  template:
+    src: inventory.yml.j2
+    dest: "{{ playbook_dir }}/vars/inventory.yml"
+
